@@ -2,15 +2,15 @@ from ultralytics import YOLO
 import cv2
 import math
 
-# iniciar la camara y establecer la resoluci'on de la imagen
+# Initialize the camera and set the image resolution
 cap = cv2.VideoCapture(0)
 cap.set(3, 720)
 cap.set(4, 720)
 
-#cargar nuestro modelo
+# Load our model
 model = YOLO('yolo-Weights/yolov8n.pt')
 
-#definimos las clases que queremos detectar
+# Define the classes we are going to detect
 classNames = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light', 
     'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 
@@ -23,40 +23,45 @@ classNames = [
     'scissors', 'teddy bear', 'hair drier', 'toothbrush'
 ]
 
-#bucle de captura
+# Capture Loop
 while True:
-    success, img = cap.read() #leer la imagen de la camara
-    results = model(img, stream=True) #enviar a yolo la imagen para detectar objetos
+    success, img = cap.read()  # Read the image from the camera
+    results = model(img, stream=True)  # Send the image to YOLO for detection
 
-    #iteramos sobre lo que detecte yolo
+    # Loop over detected objects
     for r in results:
-        boxes = r.boxes #obtener las cajas de los objetos detectados
+        boxes = r.boxes  # Get bounding boxes
         for box in boxes:
-            x1,y1,x2,y2 = box.xyxy[0] #obtener las coordenadas de la caja
-            x1,y1,x2,y2 = map(int, [x1,y1,x2,y2]) #convertir las coordenadas a enteros
-
-            #dibujar la caja en la imagen
-            cv2.rectangle(img, (x1,y1), (x2,y2), (255,0,255), 3)
-
-            #calcular la confianza del objeto detectado
-            confidence = math.ceil(box.conf[0] * 100) 
-            print(confidence)
-
-            #detectamos el nombre
+            x1, y1, x2, y2 = box.xyxy[0]  # Get bounding box coordinates
+            x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])  # Convert to int
+            
+            # Detect the class name of the object
             cls = int(box.cls[0])
-            print(classNames[cls])
+            classname = classNames[cls]
+            
+            # Calculate the confidence of the detected object
+            confidence = math.ceil(box.conf[0] * 100) 
+            print(f'{classname}: {confidence}%')
 
-            #escribir el nombre del objeto en la imagen
-            org = (x1, y1)
+            # Draw the bounding box from the image
+            color = (0, 255, 0)  # Default color: green
+            if classname == 'cat':
+                color = (128, 0, 128)  # Purple color for cats
+
+            # Draw the rectangle on the image
+            cv2.rectangle(img, (x1, y1), (x2, y2), color, 3)
+
+            # Write the class name and confidence on the image
+            org = (x1, y1 - 10)  # Position the text above the bounding box
             font = cv2.FONT_HERSHEY_SIMPLEX
-            cv2.putText(img, f"{classNames[cls]} {confidence:.2f}", org, font, 1, (255, 0, 0), 2)
+            cv2.putText(img, f"{classname} {confidence:.2f}%", org, font, 0.5, color, 2)
 
-    #creamos una ventana para mostrar la imagen
+    # Create a window to display the image
     cv2.imshow("Webcam", img)
-    #bucle de salida
+
+    # Exit loop
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-        
-        
+
 cap.release()
 cv2.destroyAllWindows()
